@@ -1,2 +1,3 @@
 # ArticleTemplate
- Repo with template to make an article using RMarkdown
+
+ Repo with a template to make an article using RMarkdown.

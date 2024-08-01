@@ -1,0 +1,178 @@
+---
+title: "Title"
+author: "Authors"
+date: "`r Sys.Date()`"
+output: 
+  word_document:
+    # Template styles in word
+    reference_docx: template.docx
+    # Add this exe in the pandoc folder to manage cross references
+    pandoc_args: ["-Fpandoc-crossref"]
+bibliography: Library.bib
+csl: international-journal-of-digital-earth.csl
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+---
+figureTitle: "Figure"
+tableTitle: "Table"
+equationTitle: "Equation"
+eqnPrefix: "equation"
+figPrefix: 
+  - "fig."
+  - "figs."
+---
+
+```{r setup, echo = FALSE, message=FALSE, warning=FALSE, results='hide'}
+library(tidyverse)
+library(lemon)
+library(flextable)
+library(magick)
+library(grid)
+
+# Load data
+df <- read.csv("mydata.csv")
+
+# Flextable options
+set_flextable_defaults(
+  font.family = "Times New Roman",
+  font.size = 12, 
+  theme_fun = function(x) theme_booktabs(x,bold_header = TRUE),
+  padding = 6,
+  background.color = "#FFFFFF",
+  digits = 2,
+  decimal.mark = ".",
+  big.mark = ",",
+  na_str = "-")
+
+knitr::knit_hooks$set(crop = knitr::hook_pdfcrop)
+
+# Auto figure and table number
+figure_f = local({
+  i = 0
+  function(x) {
+    i <<- i + 1
+    paste('Figure ', i, '. ', x, sep = '')
+  }
+})
+
+table_f = local({
+  j = 0
+  function(x) {
+    j <<- j + 1
+    paste('Table ', j, '. ', x, sep = '')
+  }
+})
+```
+
+# Introduction
+
+Here is my intro, references separated by ; [@Solórzanoetal2020; @Solórzanoetal2020]. If you want to add something inside the parentheses use comma [e.g., @Solórzanoetal2020].
+
+# Methods
+
+## Study site
+
+Add |crop: true in the chunk to ignore white spaces around the figure. This is for figures made outside this document:
+
+```{r fig1, echo= FALSE, warning=FALSE, message = FALSE,fig.width=16, fig.height=10, fig.cap = figure_f("Fig.1")}
+#| crop: true
+
+img <- image_read("D:/Drive/Jonathan_trabaggio/Doctorado/R/CometaLiDARrevML/Map/Map1.jpeg")
+img |> 
+  grid::grid.raster()
+```
+
+## Data
+
+### Sampling method
+
+Use superscripts and subscript $m^2$ and $x_i$
+Reference equations @eq:eqn1: Double money sign is for equation in its own line
+
+$$x = y$${#eq:eqn1}
+
+greek letters $\rho$, italics: *Zygia recordii* and bold **Cactaceae**
+
+more complex equations:
+
+$$RMSE = \sqrt{\sum_{i=1}^{n} \frac{(\hat{y}_i - y_i)}{n}}$$ {#eq:eqn2}
+
+where $\hat{y}$ stands for the predicted AGB value and $y$ for the
+observed AGB value of each plot ($i$); while $n$ stands for the number
+of sampled plots. 
+
+# Results
+
+## Field data
+
+In line code can be used as: 
+`r round(mean(df$AGB), 2)` Mg/ha 
+
+This is for images built in the document:
+
+```{r fig2, echo= FALSE, warning=FALSE, message = FALSE,fig.width=16, fig.height=10, fig.cap = figure_f("Fig. 2")}
+#| crop: true
+df_compl |>
+  ggplot(aes(x = SumaAGB_ha, 
+             y = SumaAGB_ha,
+             col = as.factor(Sitio), 
+             ymin = IC2.5,
+             ymax = IC97.5)) + 
+  geom_point(show.legend = FALSE,
+             size = 2,
+             position=position_dodge(width=0.5)) +
+  geom_errorbar(show.legend = FALSE,
+                lwd = 1,
+                position=position_dodge(width=0.5)) +
+  scale_x_continuous(expand = c(0,0)) +
+  scale_y_continuous(expand = c(0,0)) +
+  labs(x = "AGB (Mg/ha)", 
+       y = "AGB (Mg/ha)") + 
+  cowplot::theme_cowplot() + 
+  theme(
+    text=element_text(size=20,colour="black"),
+    axis.text = element_text(size=20, colour="black", angle = 90, hjust = 1, vjust = 0.5), 
+    axis.title = element_text(size=20, colour="black", face = "bold"), axis.line = element_line(colour = "black"))
+```
+For tables, use flextable
+
+Remember each chunk should have its unique name.
+
+```{r tablemodels, echo= FALSE}
+tab2 <- tibble()
+
+flextable(tab2) |>  
+  set_header_labels(model = "Model", 
+    var1 = "Var 1", 
+    var2 = "Var 2", 
+    var3 = "Var 3",
+    rmse_train = "RMSE train",
+    rmse_test = "RMSE test",
+    rrmse_train = "RMSE train (%)",
+    rrmse_test = "RMSE test (%)",
+    r2_train = "R2 train",
+    r2_test = "R2 test") |>
+  colformat_double() |>
+  # Custom titles
+  flextable::compose(part = "header", i = 1, j = c(9, 10),
+         value = c(as_paragraph(as_i("R"),
+                              as_i(as_sup("2")),
+                              " train"),
+                   as_paragraph(as_i("R"),
+                              as_i(as_sup("2")),
+                              " test"))) |>
+  set_caption(
+    as_paragraph(
+      as_chunk(table_f("Tab1"))
+    ), word_stylename = "Table Caption"
+  ) %>%
+  set_table_properties(layout = "autofit")
+
+```
+
+# Conclusion
+
+# References
